@@ -82,8 +82,8 @@ def update(n):
 
 
 ani=FuncAnimation(fig,update,N,init_func=init,blit=False,interval=10,repeat=False)
-#mng=plt.get_current_fig_manager()
-#mng.resize(mng.window.maxsize())
-plt.get_current_fig_manager().window.showMaximized() #para QT5
+# #mng=plt.get_current_fig_manager()
+# #mng.resize(mng.window.maxsize())
+# plt.get_current_fig_manager().window.showMaximized() #para QT5
 plt.show()
 
