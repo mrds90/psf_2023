@@ -37,11 +37,15 @@ int main( void )
          // Asignar valores Q7
          q7_num1 = 0x40;
          q7_num2 = 0x23;
-
+         q7_t res = (((q7_num1 * q7_num2)<<1) >>8);
          // Realizar una multiplicación
          arm_mult_q7(&q7_num1, &q7_num2, &q7_result,1);
          char str[50];
+         printf("by dsp: ");
          printQ7(q7_result,str);
+         printf(str);
+         printf("by soft: ");
+         printQ7(res,str);
          printf(str);
          gpioToggle(LED1);
       }
