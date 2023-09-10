@@ -2,9 +2,9 @@
 
 
 
-## Simulaciones
+## 3 - Simulaciones
 
-### Paquete generador de funciones
+### 3.1 - Paquete generador de funciones
 
 Se genero un paquete generador de funciones en el módulo FuncGenerator.py:
 ```
@@ -52,7 +52,34 @@ y se graficó utilizando la biblioteca plot de matplotlib
 
 ![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/FuncGenFs3000F04Amp1_0Phase0_75.png?raw=true)
 
+### 3.2 - Simulación con Alias
 
+Se generó la simulación propuesta en el ejercicio.
+
+```
+from FuncGenerator import *
+from matplotlib import pyplot as plt
+
+fs = 1000  # Frecuencia de muestreo en Hz
+amp = 1.0  # Amplitud de la señal
+samples = 1000  # Número de muestras
+phase = 0.0
+# Generar la señal sinusoidal
+t_sin1_1, sinusoidal_signal0 = SinFunc(fs, 1.1 *fs, amp, samples,phase)
+t_sin0_1, sinusoidal_signal1 = SinFunc(fs, 0.1 *fs, amp, samples,phase)
+
+t_sin0_49, sinusoidal_signal2 = SinFunc(fs, 0.49 *fs, amp, samples,phase)
+t_sin0_51, sinusoidal_signal3 = SinFunc(fs, 0.51 *fs, amp, samples,phase)
+t_sin0_49C, sinusoidal_signal4 = SinFunc(fs*10, 0.49 *fs, amp, samples,phase)
+```
+
+En el primer caso se observa un claro ejemplo en donde la frecuencia de la señal es muy superior a la frecuencia de muestreo / 2 
+y la misma se observa en el espectro como una señal de 0.1 * fs. 
+Este fenómeno, teóricamente conocido como aliasing, se refiere a la aparición de una señal en el rango entre -fs/2 y fs/2 en el espectro cuya frecuencia natural esta fuera de este rango. Para determinar la frecuencia a la que esta señal aparecerá dentro de ese rango, se realizan restas sucesivas de la frecuencia de muestreo (fs) a la frecuencia original de la señal hasta que la frecuencia resultante esté dentro del espectro observable definido por la frecuencia de muestreo (fs).
+
+En el segundo caso se observa una situación similar, solo que al restar la frecuencia de muestreo a la señal que de 0.51 * fs la misma queda 
+en el lado negativo del espectro, es decir con la fase invertida.
+![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/TP1-3_2_2Alias.png?raw=true)
 
 ## Author
 

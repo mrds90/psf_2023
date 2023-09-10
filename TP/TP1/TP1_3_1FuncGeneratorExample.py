@@ -1,11 +1,11 @@
 from FuncGenerator import *
 from matplotlib import pyplot as plt
 
-fs = 3000  # Frecuencia de muestreo en Hz
-f0 = 4    # Frecuencia de la señal en Hz
-amp = 1.0  # Amplitud de la señal
-samples = 1000  # Número de muestras
-phase = 0.75
+fs = 1000  # Frecuencia de muestreo en Hz
+f0 = 2    # Frecuencia de la señal en Hz
+amp = 0.4  # Amplitud de la señal
+samples = 2000  # Número de muestras
+phase = 0.25
 # Generar la señal sinusoidal
 t_sin, sinusoidal_signal = SinFunc(fs, f0, amp, samples,phase)
 t_square, square_signal = SquareFunc(fs, f0, amp, samples)
