@@ -46,8 +46,13 @@ t_triangular, triangular_signal = TriangularFunc(fs, f0, amp, samples)
 ```
 y se graficó utilizando la biblioteca plot de matplotlib
 
-
 ![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/FuncGenFs1000F01Amp0_8Phase0_5.png?raw=true)
+
+![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/FuncGenFs1000F02Amp0_4Phase0_25.png?raw=true)
+
+![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/FuncGenFs3000F04Amp1_0Phase0_75.png?raw=true)
+
+
 
 ## Author
 
