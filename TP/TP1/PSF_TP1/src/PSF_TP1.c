@@ -90,6 +90,8 @@ static uint16_t printQ7(q7_t n,char *buf)
 
 #elif (EXERCISE == 2)
 
+#define RESOLUTION(data, bit)  (data >> (10-bit))
+
 static void FSMMainPrgInit(void);
 
 static void ISRAdquisition(void* not_used);
@@ -108,9 +110,9 @@ int main(void) {
 
 
 static void FSMMainPrgInit(void) {
-   boardConfig		 (							);
-   uartConfig		 ( UART_USB ,460800			);
-   cyclesCounterInit ( EDU_CIAA_NXP_CLOCK_SPEED );
+   boardConfig ();
+   uartConfig (UART_USB ,460800);
+   cyclesCounterInit (EDU_CIAA_NXP_CLOCK_SPEED);
    uartInterrupt(UART_USB, TRUE);
    uartCallbackSet(UART_USB, UART_TRANSMITER_FREE, ISRUartTx, NULL);
    ADCConfig(ISRAdquisition, NULL);
@@ -123,7 +125,7 @@ static void ISRAdquisition(void* not_used) {
    ADCRead();
    
    if(data_sent) {
-      uartTxWrite(UART_USB, (uint8_t)((ADCDataValue() - 512) >> 6)) ;
+      uartTxWrite(UART_USB, (uint8_t)(RESOLUTION((ADCDataValue() - 512), 8))) ;
       data_sent = FALSE;
    }
 }

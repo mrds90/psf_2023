@@ -89,7 +89,41 @@ un divisor resistivo para centrar en 1.65 el punto medio de la aquicisión. En l
 
 ![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/TP1-5_2-SetUp.jpeg?raw=true)
 
+Para realizar esta prueba se cuantizo con 8 y 4 bits para poder enviar el sample en un solo byte y simplificar el problema. el codigo C
+se puede observer en [PSF_TP1.c](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/PSF_TP1/src/PSF_TP1.c) en el apartado
+de Ejercico 2. Este utiliza la interrupción de ADC y de la UART para enviar cada muestra sampleada de forma continua. No se utiliza ninguna
+estrategia de handshake en la comunicación.
 
+Por contra parte se puede encontrar en el scrip de python [readADCdata.py](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/readADCdata.py) que se mediante dos hilos se genera el audio a 400Hz y se lee la UART y se plotea en pantalla.
+
+Aqui se dejan dos figuras en donde la primera es un muestreo con una resolución de 8 bit y la segunda con una resolución de 4 bits
+
+![alt text](https://raw.githubusercontent.com/mrds90/psf_2023/MSE_Dominguez/TP/TP1/figures/TP1-5_2-8bitResolution.png)
+
+![alt text](https://raw.githubusercontent.com/mrds90/psf_2023/MSE_Dominguez/TP/TP1/figures/TP1-5_2-4bitResolution.png)
+
+Se observa como se deforma la señal debido a la disminución de resolución y la aparición de ruido de cuantización.
+
+Para una señal de audio generada con las siguientes características:
+
+- Máximo: 1.65
+- Mínimo: -1.65
+- RMS: 1.166738838335642
+
+Se registro en la señal muestreada con 8bit lo siguiente:
+- Máximo: 1.6242187499999998
+- Mínimo: -1.65
+- RMS: 1.1384565467880015
+
+y en la señal muestreada con 4bit lo siguiente:
+
+- Máximo: 1.4437499999999999
+- Mínimo: -1.65
+- RMS: 1.1272000985544324
+
+El mínimo de -1.65 se debe a que el punto medio del divisor esta levemente corrido y satura en la zona negativa al poner el volumen al 100%
+Se observa que la señal con menos resolución se encuentra mas deformada debido al ruido de cuantización.
+No se observan diferencias significaticas en el valor RMS en esta aplicación.
 
 ## Author
 
