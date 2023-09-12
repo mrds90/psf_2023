@@ -81,6 +81,16 @@ En el segundo caso se observa una situación similar, solo que al restar la frec
 en el lado negativo del espectro, es decir con la fase invertida.
 ![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/TP1-3_2_2Alias.png?raw=true)
 
+
+### 5.2 - Ruido de cuantización
+
+Se realizo en la edu-ciaa el circuito propuesto que consistía en un capacitor de desacople, un filtro rc como anti alias y
+un divisor resistivo para centrar en 1.65 el punto medio de la aquicisión. En la siguiente imagen se ve el circuito montado:
+
+![alt text](https://github.com/mrds90/psf_2023/blob/MSE_Dominguez/TP/TP1/figures/TP1-5_2-SetUp.jpeg?raw=true)
+
+
+
 ## Author
 
 Marcos Dominguez

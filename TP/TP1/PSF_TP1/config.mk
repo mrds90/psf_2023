@@ -5,6 +5,8 @@ OPT=g
 USE_NANO=n
 SEMIHOST=n
 USE_FPU=y
+DEFINES+=SAPI_USE_INTERRUPTS
+
 
 # Libraries
 
