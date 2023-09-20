@@ -17,3 +17,9 @@ def TriangularFunc(fs: float, f0: float, amp: float, samples: int) -> [np.ndarra
     t = np.arange(0, samples) / fs
     triangular_wave = (2 * amp / np.pi) * np.arcsin(np.sin(2 * np.pi * f0 * t))
     return t, triangular_wave
+
+def DeltaFunc(fs: float, samples: int) -> [np.ndarray, np.ndarray]:
+    t = np.arange(0, samples) / fs
+    delta_values = np.zeros(samples)
+    delta_values[0] = 1.0
+    return t, delta_values
