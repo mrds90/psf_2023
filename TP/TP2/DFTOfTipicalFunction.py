@@ -74,7 +74,6 @@ plt.minorticks_on()
 plt.grid(which='minor', linestyle='--', linewidth='0.5', alpha=0.8)
 
 print("Señal Delta en t=0:")
-print("A) Frecuencia:", f0, "Hz")
 print("B) Amplitud:", amp)
 print("C) Potencia promedio:", np.mean(delta_values**2))
 print("D) Frecuencia de muestreo:", fs, "Hz")
