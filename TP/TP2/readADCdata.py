@@ -1,10 +1,13 @@
-
-    
 import numpy as np
 import simpleaudio as sa
 import serial
 import threading
-import matplotlib.pyplot as plt
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.animation import FuncAnimation
+from queue import Queue
 
 # Parámetros de la señal de audio
 f_audio = 400                                           # Frecuencia de la señal de audio en Hz
@@ -14,17 +17,20 @@ t_audio = np.arange(0, sec, 1/fs_audio)                 # Vector de tiempo
 note = (2**15-1)*np.sin(2 * np.pi * f_audio * t_audio)  # Tono senoidal puro a frecuencia f_audio
 audio_signal = note.astype(np.int16)                    # Señal de audio
 
+# Inicializar una cola para transmitir datos entre hilos
+data_queue = Queue()
+
 # Función para generar y reproducir la señal de audio
 def play_audio():
-    while(True):
+    while True:
         play_obj = sa.play_buffer(audio_signal, 1, 2, fs_audio)
         play_obj.wait_done()
 
-# Función para recibir datos del ADC y graficarlos
-def receive_and_plot_data():
+# Función para recibir datos del ADC y ponerlos en la cola
+def receive_data():
     ADC_MAX_SAMPLE_RATE = 400000
     ser = serial.Serial('/dev/ttyUSB1', 460800) 
-    while(True):
+    while True:
         buffer_size = len(t_audio)
         time_buffer = list()
         data_buffer = list()
@@ -60,61 +66,65 @@ def receive_and_plot_data():
                     value = data_value * 3.3 / 1024
                     # Agregar el valor al búfer de datos
                     data_buffer.append(value)
-                    time_buffer.append(len(data_buffer) / (ADC_MAX_SAMPLE_RATE / 64))
+                    time_buffer.append(len(data_buffer) / (ADC_MAX_SAMPLE_RATE / 40))
                     time_recorded = time_buffer[-1]
                     # Restablecer el estado de sincronización
                     sync_state = "esperando_sincronizacion"
-            
 
-            # Calcular el tiempo basado en la frecuencia de muestreo
+        # Colocar los datos en la cola para la gráfica
+        data_queue.put((time_buffer, data_buffer, audio_signal * 1.65 / 32766))
 
-            # Crear una nueva figura para la gráfica de datos adquiridos
-        max_value_adquirida = max(data_buffer)
-        min_value_adquirida = min(data_buffer)
-        rms_adquirida = np.sqrt(np.mean(np.array(data_buffer) ** 2))
+# Clase para la ventana de gráficos
+class DataPlot(QWidget):
+    def __init__(self):
+        super().__init__()
 
-        # Calcular el máximo, mínimo y RMS de la señal original
-        original_signal = audio_signal * 1.65 / 32766
-        max_value_original = max(original_signal)
-        min_value_original = min(original_signal)
-        rms_original = np.sqrt(np.mean(original_signal ** 2))
+        self.fig = Figure()
+        self.canvas = FigureCanvas(self.fig)
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.canvas)
+        self.setLayout(self.layout)
 
-        # Imprimir los valores calculados
-        print("Máximo señal original:", max_value_original)
-        print("Máximo señal adquirida:", max_value_adquirida)
-        print("Mínimo señal original:", min_value_original)
-        print("Mínimo señal adquirida:", min_value_adquirida)
-        print("RMS señal original:", rms_original)
-        print("RMS señal adquirida:", rms_adquirida)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlim(0, 2 / f_audio)
+        self.ax.set_ylim(-1.75, 1.75)
+        self.ax.set_xlabel('Tiempo (segundos)')
+        self.ax.set_ylabel('Valor')
+        self.ax.set_title('Datos adquiridos')
+        self.line1, = self.ax.plot([], [], label="recorded")
+        self.line2, = self.ax.plot([], [], label="original")
+        self.ax.legend()
+        self.ax.grid(True, linestyle='-', alpha=0.9)
+        self.ax.minorticks_on()
+        self.ax.grid(which='minor', linestyle='--', linewidth='0.5', alpha=0.8)
 
-        plt.clf()
-        plt.plot(time_buffer, data_buffer, label="recorded")
-        plt.plot(t_audio, original_signal, label="original")
-        plt.xlim([0, 2/f_audio])
-        # plt.ylim([-10,10])
-        plt.xlabel('Tiempo (segundos)')
-        plt.ylabel('Valor')
-        plt.title('Datos adquiridos')
-        plt.legend()
-        plt.grid(True, linestyle='-', alpha=0.9)
-        plt.minorticks_on()
-        plt.grid(which='minor', linestyle='--', linewidth='0.5', alpha=0.8)
-        plt.tight_layout()
-        plt.pause(0.1)
-        del data_buffer
-    
+        self.ani = FuncAnimation(self.fig, self.animate, blit=False)
+        
 
+    def animate(self, frame):
+        if not data_queue.empty():
+            time_buffer, data_buffer, original_signal = data_queue.get()
+            self.line1.set_data(time_buffer, data_buffer)
+            self.line2.set_data(t_audio, original_signal)
 
+        self.fig.canvas.flush_events()
 
-# Crear hilos para la reproducción de audio y la recepción de datos
-fig = plt.figure()
-data_thread = threading.Thread(target=receive_and_plot_data)
-audio_thread = threading.Thread(target=play_audio)
+# Función principal
+def main():
+    app = QApplication(sys.argv)
+    main_window = QMainWindow()
+    main_window.setGeometry(100, 100, 800, 600)
+    central_widget = DataPlot()
+    main_window.setCentralWidget(central_widget)
+    main_window.show()
 
-# Iniciar los hilos
-audio_thread.start()
-data_thread.start()
-# Esperar a que ambos hilos terminen (esto no debería ocurrir en este caso)
-audio_thread.join()
-data_thread.join()
-plt.show()
+    audio_thread = threading.Thread(target=play_audio)
+    data_thread = threading.Thread(target=receive_data)
+
+    data_thread.start()
+    audio_thread.start()
+
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
