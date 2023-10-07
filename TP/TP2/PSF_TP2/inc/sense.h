@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 /*=====[C++ - begin]=========================================================*/
 
@@ -20,7 +21,9 @@ extern "C" {
 #endif
 
 /*=====[Definition macros of public constants]===============================*/
+#define USED_ADC            0
 #define ADC_BITS_RESOLUTION 10
+#define SAMPLE_RATE_FACTOR  64         
 /*=====[Public function-like macros]=========================================*/
 
 /*=====[Definitions of public data types]====================================*/
@@ -35,7 +38,7 @@ void ADCRead(void);
 
 void ADCStartConversion(void);
 
-bool_t ADCDataAvailable(void);
+bool ADCDataAvailable(void);
 
 uint16_t ADCDataValue(void);
 /*=====[Prototypes (declarations) of public functions]=======================*/

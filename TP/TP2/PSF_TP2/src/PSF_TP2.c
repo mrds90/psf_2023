@@ -18,10 +18,11 @@
 
 #define RESOLUTION(data, bit)  (data >> (10 - bit))
 
-#define SAMPLE_RATE (ADC_MAX_SAMPLE_RATE / 64)
+#define SAMPLE_RATE (ADC_MAX_SAMPLE_RATE / SAMPLE_RATE_FACTOR)
 
 #define SYNC_HEAD   0xA5
 
+#define ADC_BIT_RESOLUTION 10
 
 typedef enum {
     SEND_STATE_HEAD,
@@ -55,7 +56,7 @@ int main(void) {
     // ----- Setup -----------------------------------
     FSMMainPrgInit();
     // ----- Repeat for ever -------------------------
-    while (TRUE) {
+    while (true) {
         __WFI();
     }
     return 0;
@@ -65,14 +66,14 @@ static void FSMMainPrgInit(void) {
     boardConfig();
     uartConfig(UART_USB, 460800);
     cyclesCounterInit(EDU_CIAA_NXP_CLOCK_SPEED);
-    uartInterrupt(UART_USB, TRUE);
+    uartInterrupt(UART_USB, true);
     uartCallbackSet(UART_USB, UART_TRANSMITER_FREE, ISRUartTx, NULL);
     TIMER_CONFIG_Init(SAMPLE_RATE, ISRSampleBaseTime);
     ADCConfig(ISRAdquisition, NULL);
 }
 
 /*=====[Implementation of private interrupt functions]=================*/
-#define ADC_BIT_RESOLUTION 10
+
 static int16_t adc_value = 0;
 static void ISRAdquisition(void *not_used) {
     static uint32_t count = 0;
