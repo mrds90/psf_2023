@@ -36,7 +36,7 @@ void ADCConfig(void *ptr_function, void *context) {
 
     Chip_ADC_Init(LPC_ADC0, &ADCSetup);
     /* Enable  burst mode */
-    Chip_ADC_SetBurstCmd(LPC_ADC0, ENABLE);
+    Chip_ADC_SetBurstCmd(LPC_ADC0, DISABLE);
 
     Chip_ADC_SetResolution(LPC_ADC0, &ADCSetup, ADC_10BITS);
 
@@ -56,6 +56,7 @@ void ADCConfig(void *ptr_function, void *context) {
 
     Chip_ADC_EnableChannel(LPC_ADC0, ADC_CH1, ENABLE);
     Chip_ADC_Int_SetChannelCmd(LPC_ADC0, ADC_CH1, ENABLE);
+
 
     NVIC_EnableIRQ(ADC0_IRQn);
 }
@@ -79,6 +80,10 @@ void ADCEnable(void) {
 void ADCRead(void) {
     Chip_ADC_ReadValue(LPC_ADC0, ADC_CH1, &data);
     data_available = TRUE;
+}
+
+void ADCStartConversion(void) {
+    Chip_ADC_SetStartMode(LPC_ADC0, ADC_START_NOW, ADC_TRIGGERMODE_FALLING);
 }
 
 bool_t ADCDataAvailable(void) {

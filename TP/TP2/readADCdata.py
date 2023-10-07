@@ -21,40 +21,50 @@ def play_audio():
         play_obj.wait_done()
 
 # Función para recibir datos del ADC y graficarlos
-import time
-
 def receive_and_plot_data():
+    ADC_MAX_SAMPLE_RATE = 400000
     ser = serial.Serial('/dev/ttyUSB1', 460800) 
-    last_update_time = time.time()  # Obtener el tiempo actual
-    sampling_rate_receive = list()
-    while True:
+    while(True):
         buffer_size = len(t_audio)
-        data_buffer = []
+        time_buffer = list()
+        data_buffer = list()
         print("ReadInit")
-        
-        while len(data_buffer) < buffer_size:
-            # Leer dos bytes de datos desde el puerto serial
-            data_bytes = ser.read(1)
-
-            # Convertir los dos bytes a un valor numérico (ajusta la conversión según tu formato de datos)
-            data_value = (int.from_bytes(data_bytes, "big", signed=True))
-            value = data_value * 3.3 / 256  # 8 bit res
+        sync_state = "esperando_sincronizacion"
+        sync_byte = 0xA5
+        time_recorded = 0
+        while time_recorded < 2:
+            # Leer un byte desde el puerto serie
+            data_byte = ser.read(1)[0]  # El [0] extrae el valor numérico del byte
             
-
-            # Agregar el valor al buffer
-            data_buffer.append(value)
-
-            # Calcular el tiempo transcurrido desde la última actualización
-            current_time = time.time()
-            sampling_rate_receive.append(1/(current_time - last_update_time))
-            last_update_time = current_time
+            if sync_state == "esperando_sincronizacion":
+                if data_byte == sync_byte:
+                    sync_state = "esperando_byte_alto"
+            
+            elif sync_state == "esperando_byte_alto":
+                if data_byte == sync_byte:
+                    sync_state = "esperando_byte_alto"
+                else: 
+                    byte_alto = data_byte
+                    sync_state = "esperando_byte_bajo"
 
             
-
-        # Realizar el procesamiento de los datos y trazarlos aquí
-
-# Llamar a la función receive_and_plot_data() para iniciar la recepción y el procesamiento de datos
-
+            elif sync_state == "esperando_byte_bajo":
+                if data_byte == sync_byte:
+                    sync_state = "esperando_byte_alto"
+                else: 
+                    byte_bajo = data_byte
+                    # Combinar los dos bytes para obtener el valor de 16 bits en big-endian
+                    bytes_buff= [byte_alto,byte_bajo]
+                    data_value = int.from_bytes(bytes_buff, "big", signed=True)
+                    # Escalar el valor de datos
+                    value = data_value * 3.3 / 1024
+                    # Agregar el valor al búfer de datos
+                    data_buffer.append(value)
+                    time_buffer.append(len(data_buffer) / (ADC_MAX_SAMPLE_RATE / 64))
+                    time_recorded = time_buffer[-1]
+                    # Restablecer el estado de sincronización
+                    sync_state = "esperando_sincronizacion"
+            
 
             # Calcular el tiempo basado en la frecuencia de muestreo
 
@@ -70,7 +80,6 @@ def receive_and_plot_data():
         rms_original = np.sqrt(np.mean(original_signal ** 2))
 
         # Imprimir los valores calculados
-        print(f"Fs: {np.mean(sampling_rate_receive)}")
         print("Máximo señal original:", max_value_original)
         print("Máximo señal adquirida:", max_value_adquirida)
         print("Mínimo señal original:", min_value_original)
@@ -79,7 +88,7 @@ def receive_and_plot_data():
         print("RMS señal adquirida:", rms_adquirida)
 
         plt.clf()
-        plt.plot(t_audio, data_buffer, label="recorded")
+        plt.plot(time_buffer, data_buffer, label="recorded")
         plt.plot(t_audio, original_signal, label="original")
         plt.xlim([0, 2/f_audio])
         # plt.ylim([-10,10])

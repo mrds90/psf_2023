@@ -19,6 +19,15 @@
 #define RESOLUTION(data, bit)  (data >> (10 - bit))
 
 #define SAMPLE_RATE (ADC_MAX_SAMPLE_RATE / 64)
+
+#define SYNC_HEAD   0xA5
+
+
+typedef enum {
+    SEND_STATE_HEAD,
+    SEND_STATE_HIGH,
+    SEND_STATE_LOW,
+} send_state_t;
 /*=====[Definition of private methods]=======================================*/
 
 /*=====[Definitions of extern global variables]==============================*/
@@ -38,11 +47,9 @@ static void ISRSampleBaseTime(void *not_used);
 
 static void ISRUartTx(void *not_used);
 
-static bool_t data_sent = TRUE;
+static send_state_t data_sent = SEND_STATE_HEAD;
 
 static uint32_t frec = 0;
-
-static uint32_t count = 0;
 
 int main(void) {
     // ----- Setup -----------------------------------
@@ -76,17 +83,12 @@ static void ISRAdquisition(void *not_used) {
     }
     ADCRead();
 
-    if (data_sent > 0) {
+    if (data_sent == SEND_STATE_HEAD) {
         adc_value = RESOLUTION((ADCDataValue() - 512), ADC_BIT_RESOLUTION);
         uartInterrupt(UART_USB, true);
-            #if (ADC_BIT_RESOLUTION < 9)
-        uartTxWrite(UART_USB, (int8_t)(adc_value));
-            #else
-        uartTxWrite(UART_USB, (int8_t)(adc_value >> 8));
-            #endif
-        data_sent = FALSE;
+        uartTxWrite(UART_USB, SYNC_HEAD);
+        data_sent = SEND_STATE_HIGH;
     }
-    ADCDisable();
 }
 
 static void ISRUartTx(void *not_used) {
@@ -97,16 +99,15 @@ static void ISRUartTx(void *not_used) {
         gpioToggle(LED3);
     }
 
-    #if (ADC_BIT_RESOLUTION < 9)
-    data_sent = TRUE;
-    uartInterrupt(UART_USB, false);
-    #else
-    if (data_sent == FALSE) {
+    if (data_sent == SEND_STATE_HIGH) {
+        data_sent = SEND_STATE_LOW;
+        uartTxWrite(UART_USB, (int8_t)(adc_value >> 8));
+    }
+    else if (data_sent == SEND_STATE_LOW) {
+        data_sent = SEND_STATE_HEAD;
         uartTxWrite(UART_USB, (int8_t)(adc_value));
-        data_sent = TRUE;
         uartInterrupt(UART_USB, false);
     }
-    #endif
 }
 
 static void ISRSampleBaseTime(void *not_used) {
@@ -116,5 +117,5 @@ static void ISRSampleBaseTime(void *not_used) {
         count = 0;
         gpioToggle(LED1);
     }
-    ADCEnable();
+    ADCStartConversion();
 }

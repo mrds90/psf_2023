@@ -1,6 +1,6 @@
 {
     "env": {
-      "myDefaultIncludePath": ["${workspaceFolder}", "${workspaceFolder}/../../**", "${workspaceFolder}/../../**/**/**"]
+      "myDefaultIncludePath": ["${workspaceFolder}", "${workspaceFolder}/../../**/**/**"]
     },
     "configurations": [
       {

@@ -24,6 +24,7 @@ extern "C" {
 /*=====[Public function-like macros]=========================================*/
 
 /*=====[Definitions of public data types]====================================*/
+
 void ADCConfig(void *ptr_function, void* context);
 
 void ADCDisable(void);
@@ -31,6 +32,8 @@ void ADCDisable(void);
 void ADCEnable(void);
 
 void ADCRead(void);
+
+void ADCStartConversion(void);
 
 bool_t ADCDataAvailable(void);
 
