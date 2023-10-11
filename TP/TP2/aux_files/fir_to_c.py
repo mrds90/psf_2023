@@ -4,14 +4,14 @@ import scipy.signal as sc
 #--------------------------------------
 fig        = plt.figure()
 fig.suptitle('Conversion desde pyfdax a include files en C', fontsize=16)
-fs         = 8000
+fs         = 2000
 
 
-filterFile="fir_lp_fc1_5kHz-fs8kHz.npy"
+filterFile="band_pass_ecg_5-20hz.npy"
 
 firData=np.load(filterFile).astype(float)[:,0]
 M          = len(firData)
-N          = 128 - M + 1 #este se calcula como el largo de la FFT elegida MENOS M+1
+N          = 512 - M + 1 #este se calcula como el largo de la FFT elegida MENOS M+1
 
 firExtendedData=np.concatenate((firData,np.zeros(N-1)))
 impar=((N+M-1)%2)

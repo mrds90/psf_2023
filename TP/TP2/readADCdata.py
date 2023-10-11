@@ -10,12 +10,26 @@ from matplotlib.animation import FuncAnimation
 from queue import Queue
 
 # Parámetros de la señal de audio
-f_audio = 400                                           # Frecuencia de la señal de audio en Hz
-fs_audio = 44100                                        # Frecuencia de muestreo de la señal de audio en Hz
-sec = 2                                                 # Duración de la señal de audio en segundos
-t_audio = np.arange(0, sec, 1/fs_audio)                 # Vector de tiempo
-note = (2**15-1)*np.sin(2 * np.pi * f_audio * t_audio)  # Tono senoidal puro a frecuencia f_audio
-audio_signal = note.astype(np.int16)                    # Señal de audio
+f_audio = 10  # Frecuencia de la señal de audio en Hz
+fs_audio = 44100  # Frecuencia de muestreo de la señal de audio en Hz
+sec = 0.7  # Duración total de la señal de audio en segundos
+
+# Duración del tono senoidal (un ciclo)
+tone_duration = 1 / f_audio  # Duración de un ciclo de la señal senoidal
+silence_duration = sec - tone_duration  # Duración del silencio en segundos
+
+# Generar el tono senoidal
+t_tone = np.arange(0, tone_duration, 1/fs_audio)
+tone = (2**15-1) * np.sin(2 * np.pi * f_audio * t_tone)
+
+# Generar el silencio
+silence = np.zeros(int(silence_duration * fs_audio), dtype=np.int16)
+
+# Combinar el tono y el silencio
+audio_signal = np.concatenate((tone, silence))
+
+# Generar el vector de tiempo para la señal
+t_audio = np.arange(0, sec, 1/fs_audio)
 
 # Inicializar una cola para transmitir datos entre hilos
 data_queue = Queue()
@@ -29,7 +43,7 @@ def play_audio():
 # Función para recibir datos del ADC y ponerlos en la cola
 def receive_data():
     ADC_MAX_SAMPLE_RATE = 400000
-    ser = serial.Serial('/dev/ttyUSB1', 460800) 
+    ser = serial.Serial('/dev/ttyUSB2', 460800) 
     while True:
         buffer_size = len(t_audio)
         time_buffer = list()
@@ -47,26 +61,23 @@ def receive_data():
                     sync_state = "esperando_byte_alto"
             
             elif sync_state == "esperando_byte_alto":
-                if data_byte == sync_byte:
-                    sync_state = "esperando_byte_alto"
-                else: 
                     byte_alto = data_byte
                     sync_state = "esperando_byte_bajo"
 
             
             elif sync_state == "esperando_byte_bajo":
-                if data_byte == sync_byte:
-                    sync_state = "esperando_byte_alto"
-                else: 
                     byte_bajo = data_byte
                     # Combinar los dos bytes para obtener el valor de 16 bits en big-endian
                     bytes_buff= [byte_alto,byte_bajo]
                     data_value = int.from_bytes(bytes_buff, "big", signed=True)
                     # Escalar el valor de datos
-                    value = data_value * 3.3 / 1024
+                    value = data_value
+                    # if data_value <= 0:
+                        #  data_value = 0
+                    # value = data_value * 3.3 / 1024
                     # Agregar el valor al búfer de datos
                     data_buffer.append(value)
-                    time_buffer.append(len(data_buffer) / (ADC_MAX_SAMPLE_RATE / 40))
+                    time_buffer.append(len(data_buffer) / (ADC_MAX_SAMPLE_RATE / 200))
                     time_recorded = time_buffer[-1]
                     # Restablecer el estado de sincronización
                     sync_state = "esperando_sincronizacion"
@@ -86,13 +97,14 @@ class DataPlot(QWidget):
         self.setLayout(self.layout)
 
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_xlim(0, 2 / f_audio)
-        self.ax.set_ylim(-1.75, 1.75)
+        self.ax.set_xlim(0, 2)#2 / f_audio)
+        self.ax.set_ylim(0, 100)
+        # self.ax.set_ylim(-1.7, 1.7)
         self.ax.set_xlabel('Tiempo (segundos)')
         self.ax.set_ylabel('Valor')
         self.ax.set_title('Datos adquiridos')
         self.line1, = self.ax.plot([], [], label="recorded")
-        self.line2, = self.ax.plot([], [], label="original")
+        # self.line2, = self.ax.plot([], [], label="original")
         self.ax.legend()
         self.ax.grid(True, linestyle='-', alpha=0.9)
         self.ax.minorticks_on()
@@ -105,7 +117,7 @@ class DataPlot(QWidget):
         if not data_queue.empty():
             time_buffer, data_buffer, original_signal = data_queue.get()
             self.line1.set_data(time_buffer, data_buffer)
-            self.line2.set_data(t_audio, original_signal)
+            # self.line2.set_data(t_audio, original_signal)
 
         self.fig.canvas.flush_events()
 
@@ -118,11 +130,11 @@ def main():
     main_window.setCentralWidget(central_widget)
     main_window.show()
 
-    audio_thread = threading.Thread(target=play_audio)
+    # audio_thread = threading.Thread(target=play_audio)
     data_thread = threading.Thread(target=receive_data)
 
     data_thread.start()
-    audio_thread.start()
+    # audio_thread.start()
 
     sys.exit(app.exec_())
 

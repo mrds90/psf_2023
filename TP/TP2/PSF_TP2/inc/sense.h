@@ -23,7 +23,7 @@ extern "C" {
 /*=====[Definition macros of public constants]===============================*/
 #define USED_ADC            0
 #define ADC_BITS_RESOLUTION 10
-#define SAMPLE_RATE_FACTOR  40         
+#define SAMPLE_RATE_FACTOR  200         
 /*=====[Public function-like macros]=========================================*/
 
 /*=====[Definitions of public data types]====================================*/
