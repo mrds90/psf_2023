@@ -17,6 +17,20 @@
 #include "fir_band_pass_ecg_5-20hz.h"
 /*=====[Definition macros of private constants]==============================*/
 
+#define SEE_CUTECOM 1
+
+#define SHOW_RAW_DATA 2
+
+#define SHOW_FILTERED_DATA 3
+
+#define SHOW_PEACKS 4
+
+
+
+#define FILE_OPTION SEE_CUTECOM
+
+
+
 #define RESOLUTION(data, bit)  ((data) >> (10 - (bit)))
 
 #define SAMPLE_RATE (ADC_MAX_SAMPLE_RATE / SAMPLE_RATE_FACTOR)
@@ -67,21 +81,24 @@ int main(void) {
     // ----- Repeat for ever -------------------------
     while (true) {
         __WFI();
-
+        #if (FILE_OPTION == SEE_CUTECOM)
         if ((count % SAMPLE_RATE) == 0) {
             printf("%d\n ", ppm);
             gpioToggle(LED3);
         }
+        #endif
     }
     return 0;
 }
 
 static void FSMMainPrgInit(void) {
-    // boardConfig();
+    boardConfig();
     uartConfig(UART_USB, 460800);
     cyclesCounterInit(EDU_CIAA_NXP_CLOCK_SPEED);
-    // uartInterrupt(UART_USB, true);
-    // uartCallbackSet(UART_USB, UART_TRANSMITER_FREE, ISRUartTx, NULL);
+    #if (FILE_OPTION > SEE_CUTECOM)
+    uartInterrupt(UART_USB, true);
+    uartCallbackSet(UART_USB, UART_TRANSMITER_FREE, ISRUartTx, NULL);
+    #endif
     TIMER_CONFIG_Init(SAMPLE_RATE, ISRSampleBaseTime);
     ADCConfig(ISRAdquisition, NULL);
 }
@@ -116,6 +133,7 @@ static void ISRAdquisition(void *not_used) {
     memmove(adc_data, &adc_data[1], sizeof(int16_t) * (MA_SIZE - 1));
     adc_data[MA_SIZE - 1] = RESOLUTION((offset_buffer[ma_index] - offset), ADC_BIT_RESOLUTION);
     arm_conv_fast_q15(adc_data, MA_SIZE, h, h_LENGTH, filtered_data);
+    #if(FILE_OPTION != SHOW_FILTERED_DATA)
     arm_mult_q15(filtered_data, filtered_data, filtered_data3, h_PADD_LENGTH + MA_SIZE - 1);
     arm_mult_q15(filtered_data, filtered_data3, filtered_data3, h_PADD_LENGTH + MA_SIZE - 1);
 
@@ -127,39 +145,47 @@ static void ISRAdquisition(void *not_used) {
             gpioToggle(LED2);
         }
     }
-
-
-    // if (data_sent == SEND_STATE_HEAD) {
-    //     uartInterrupt(UART_USB, true);
-    //     uartTxWrite(UART_USB, SYNC_HEAD);
-    //     data_sent = SEND_STATE_HIGH;
-    // }
+    #endif
+    #if (FILE_OPTION > SEE_CUTECOM)
+    if (data_sent == SEND_STATE_HEAD) {
+        uartInterrupt(UART_USB, true);
+        uartTxWrite(UART_USB, SYNC_HEAD);
+        data_sent = SEND_STATE_HIGH;
+    }
+    #endif
 }
 
-// static void ISRUartTx(void *not_used) {
-//     static uint32_t count2 = 0;
-//     count2++;
-//     if (count2 == ((SAMPLE_RATE) / 2)) {
-//         count2 = 0;
-//         gpioToggle(LED3);
-//     }
+#if (FILE_OPTION > SEE_CUTECOM)
+static void ISRUartTx(void *not_used) {
+    static uint32_t count2 = 0;
+    count2++;
+    if (count2 == ((SAMPLE_RATE) / 2)) {
+        count2 = 0;
+        gpioToggle(LED3);
+    }
 
-//     static int16_t freeze_data;
-//     if (data_sent == SEND_STATE_HIGH) {
-// //        freeze_data = 6 * (filtered_data[h_LENGTH / 2]);
-// //        freeze_data = 6 * (filtered_data[h_LENGTH / 2] - THRESHOLD);
-//         freeze_data = ppm;
-//         // freeze_data = adc_data[MA_SIZE - 1];
+    static int16_t freeze_data;
+    if (data_sent == SEND_STATE_HIGH) {
+        #if (FILE_OPTION == SHOW_FILTERED_DATA)
+        freeze_data = 6 * (filtered_data[h_LENGTH / 2]);
+        #endif
+        #if (FILE_OPTION == SHOW_PEACKS)
+        freeze_data = 6 * (filtered_data[h_LENGTH / 2] - THRESHOLD);
+        #endif
+        #if (FILE_OPTION == SHOW_RAW_DATA)
+        freeze_data = adc_data[MA_SIZE - 1];
+        #endif
+        data_sent = SEND_STATE_LOW;
+        uartTxWrite(UART_USB, (int8_t)(freeze_data >> 8));
+    }
+    else if (data_sent == SEND_STATE_LOW) {
+        data_sent = SEND_STATE_HEAD;
+        uartTxWrite(UART_USB, (int8_t)(freeze_data));
+        uartInterrupt(UART_USB, false);
+    }
+}
 
-//         data_sent = SEND_STATE_LOW;
-//         uartTxWrite(UART_USB, (int8_t)(freeze_data >> 8));
-//     }
-//     else if (data_sent == SEND_STATE_LOW) {
-//         data_sent = SEND_STATE_HEAD;
-//         uartTxWrite(UART_USB, (int8_t)(freeze_data));
-//         uartInterrupt(UART_USB, false);
-//     }
-// }
+#endif
 
 static void ISRSampleBaseTime(void *not_used) {
     static uint32_t count3 = 0;

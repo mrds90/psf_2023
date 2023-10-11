@@ -9,6 +9,20 @@ from matplotlib.figure import Figure
 from matplotlib.animation import FuncAnimation
 from queue import Queue
 
+
+
+
+
+
+VOLTAGE = "VOLTAGE"
+PEAKS   = "PEAKS"
+
+mode = VOLTAGE
+
+
+
+
+
 # Parámetros de la señal de audio
 f_audio = 10  # Frecuencia de la señal de audio en Hz
 fs_audio = 44100  # Frecuencia de muestreo de la señal de audio en Hz
@@ -72,12 +86,13 @@ def receive_data():
                     data_value = int.from_bytes(bytes_buff, "big", signed=True)
                     # Escalar el valor de datos
                     value = data_value
-                    # if data_value <= 0:
-                        #  data_value = 0
-                    # value = data_value * 3.3 / 1024
+                    if (mode == PEAKS):
+                        if data_value <= 0:
+                             data_value = 0
+                    value = data_value * 3.3 / 1024
                     # Agregar el valor al búfer de datos
                     data_buffer.append(value)
-                    time_buffer.append(len(data_buffer) / (ADC_MAX_SAMPLE_RATE / 200))
+                    time_buffer.append(len(data_buffer) / (ADC_MAX_SAMPLE_RATE / 400))
                     time_recorded = time_buffer[-1]
                     # Restablecer el estado de sincronización
                     sync_state = "esperando_sincronizacion"
@@ -97,9 +112,12 @@ class DataPlot(QWidget):
         self.setLayout(self.layout)
 
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_xlim(0, 2)#2 / f_audio)
-        self.ax.set_ylim(0, 100)
-        # self.ax.set_ylim(-1.7, 1.7)
+        self.ax.set_xlim(0, 2)
+        if (mode == PEAKS):
+            self.ax.set_ylim(0, 1.7)
+        if (mode == VOLTAGE):
+            self.ax.set_ylim(-1.7, 1.7)
+
         self.ax.set_xlabel('Tiempo (segundos)')
         self.ax.set_ylabel('Valor')
         self.ax.set_title('Datos adquiridos')
